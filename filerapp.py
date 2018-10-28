@@ -12,7 +12,7 @@ from btfiler import *
 class BTGui(tk.Frame):
     def __init__(self, serverhost, serverport, firstpeer=None, hops=2, maxpeers=5, master=None):
         tk.Frame.__init__(self, master)
-        self.grid()
+        self.pack()
         self.createWidgets()
         self.master.title('File Sharing App - {}:{}'.format(serverhost, serverport))
         self.btpeer = FilePeer(maxpeers=maxpeers, serverhost=serverhost, serverport=serverport)
@@ -23,6 +23,7 @@ class BTGui(tk.Frame):
             self.update_peer_list()
         
         t = threading.Thread(target=self.btpeer.main_loop)
+        t.setDaemon(True)
         t.start()
     
         self.btpeer.stabilizer = self.btpeer.check_live_peers
@@ -58,7 +59,7 @@ class BTGui(tk.Frame):
         searchFrame = tk.Frame(self)
         addfileFrame = tk.Frame(self)
         pbFrame = tk.Frame(self)
-    
+
         fileFrame.grid(row=0, column=0, sticky=tk.N+tk.S)
         peerFrame.grid(row=0, column=1, sticky=tk.N+tk.S)
         pbFrame.grid(row=2, column=1)
@@ -132,7 +133,7 @@ class BTGui(tk.Frame):
         ttl = 4
         msgdata = '{} {} {}'.format(self.btpeer.myid, key, ttl)
         for p in self.btpeer.peers:
-            self.btpeer.send2peer(p, QUERY, msgdata)
+            self.btpeer.send2peer(p, QUERY.signal_name, msgdata)
     
     def onFetch(self):
         sels = self.fileList.curselection()
@@ -140,8 +141,8 @@ class BTGui(tk.Frame):
             sel = self.fileList.get(sels[0]).split(':')
             if len(sel) > 2:  # fname:host:port
                 fname, host, port = sel
-                resp = self.btpeer.connect_and_send(host, port, FILEGET, fname)
-                if len(resp) and resp[0][0] == REPLY:
+                resp = self.btpeer.connect_and_send(host, port, FILEGET.signal_name, fname)
+                if len(resp) and resp[0][0] == REPLY.signal_name:
                     with open(fname, 'w', encoding='utf-8') as f:
                         f.write(resp[0][1])
                     self.btpeer.files[fname] = None  # it's local now.
@@ -150,7 +151,7 @@ class BTGui(tk.Frame):
         sels = self.peerList.curselection()
         if len(sels) == 1:
             peerid = self.peerList.get(sels[0])
-            self.btpeer.send2peer(peerid, PEERQUIT, self.btpeer.myid)
+            self.btpeer.send2peer(peerid, PEERQUIT.signal_name, self.btpeer.myid)
             self.btpeer.removepeer(peerid)
 
     def onRefresh(self):

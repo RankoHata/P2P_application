@@ -42,7 +42,10 @@ class BTPeer(object):
             msgtype, msgdata = peerconn.recvdata()
             print('receive msg: msgtype: {}, msgdata: {}'.format(msgtype, msgdata))
             if msgtype in self.handlers:
-                self.handlers[msgtype](peerconn, msgdata)
+                print('test.................{}'.format(msgdata))
+                print(msgdata == '')
+                # self.handlers[msgtype](peerconn, msgdata)
+                self.handlers[msgtype](self, peerconn, msgdata)
         except KeyboardInterrupt:
             raise
         except:
@@ -181,7 +184,7 @@ class BTPeer(object):
     
     def main_loop(self):
         s = self.make_server_socket(self.serverport)
-        # s.settimeout(3)
+        # s.settimeout(3)  # 让下面的socket.accept()超时，进入下一次循环，否则程序会一直卡在accept那里, new: 现在没必要了，最外面将进程设置为守护状态
         while not self.shutdown:
             try:
                 print('start accept....................')
@@ -210,6 +213,7 @@ class BTPeerConnection(object):
         self.sd = self.s.makefile('rw', 65536)
 
     def __makemsg(self, msgtype, msgdata):
+        print(msgtype)
         msglen = len(msgdata)
         msg = struct.pack("!4sL%ds" % msglen, msgtype.encode('utf-8'), msglen, msgdata.encode('utf-8'))
         return msg
